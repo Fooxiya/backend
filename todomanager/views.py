@@ -1,18 +1,54 @@
 import io
 
-from rest_framework.exceptions import ValidationError
+from django.db import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateModelMixin, CreateModelMixin, \
+    DestroyModelMixin
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
-from rest_framework.fields import DateField, BooleanField
-from rest_framework.serializers import Serializer, CharField
-from rest_framework.viewsets import ModelViewSet
-from .serializers import ProjectModelSerializer, TodoModelSerializer
-from authapp.serializers import UserModelSerializer
-from authapp.views import UserSerializer
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from .serializers import ProjectModelSerializer, TodoModelSerializer, ProjectSerializer, TodoSerializer
+from authapp.serializers import UserModelSerializer, UserSerializer
 from authapp.models import User
 from .models import Project, Todo
 from django.http import HttpResponse, HttpResponseServerError
 from rest_framework.parsers import JSONParser
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.response import Response
+from rest_framework import status
+
+
+class ProjectLimitOffsetPagination(LimitOffsetPagination):
+    default_limit = 10
+
+
+class ProjectModelViewSet(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, CreateModelMixin, DestroyModelMixin, GenericViewSet):
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
+    serializer_class = ProjectSerializer
+    queryset = Project.objects.all()
+    pagination_class = ProjectLimitOffsetPagination
+
+
+class TodoLimitOffsetPagination(LimitOffsetPagination):
+    default_limit = 20
+
+
+class TodoModelViewSet(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, CreateModelMixin, DestroyModelMixin, GenericViewSet):
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
+    serializer_class = TodoSerializer
+    queryset = Todo.objects.all()
+    pagination_class = TodoLimitOffsetPagination
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            todo = self.get_object()
+            todo.is_active = False
+            todo.save()
+            return Response(status=status.HTTP_200_OK)
+        except IntegrityError:
+            content = {'error': 'IntegrityError'}
+            return Response(content, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProjectViewSet(ModelViewSet):
@@ -25,19 +61,36 @@ class TodoViewSet(ModelViewSet):
     queryset = Todo.objects.all()
 
 
-class ProjectSerializer(Serializer):
-    name = CharField(max_length=64)
-    link = CharField(max_length=128)
-    users = UserModelSerializer(many=True)
+class ProjectListView(ListAPIView):
+    renderer_classes = [JSONRenderer]
+    serializer_class = ProjectSerializer
+    queryset = Project.objects.all()
 
 
-class TodoSerializer(Serializer):
-    project = ProjectSerializer()
-    text = CharField(max_length=128)
-    creation_date = DateField
-    update_date = DateField
-    user = UserModelSerializer(many=True)
-    status = BooleanField
+class ProjectRetrieveView(RetrieveAPIView):
+    renderer_classes = [JSONRenderer]
+    serializer_class = ProjectSerializer
+    queryset = Project.objects.all()
+
+
+class TodoListView(ListAPIView):
+    renderer_classes = [JSONRenderer]
+    serializer_class = TodoSerializer
+    queryset = Todo.objects.all()
+
+
+class TodoRetrieveView(RetrieveAPIView):
+    renderer_classes = [JSONRenderer]
+    serializer_class = TodoSerializer
+    queryset = Todo.objects.all()
+
+
+@api_view(['GET'])
+@renderer_classes([JSONRenderer])
+def project_api_view(request):
+    project = Project.objects.all()
+    serializer = ProjectSerializer(project, many=True)
+    return Response(serializer.data)
 
 
 def get_view(request):

@@ -1,7 +1,10 @@
-from rest_framework.viewsets import ModelViewSet
-from .serializers import UserModelSerializer
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateModelMixin, CreateModelMixin
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from .serializers import UserModelSerializer, UserSerializer
 from .models import User
-from rest_framework.serializers import Serializer, CharField, EmailField
 
 
 class UserViewSet(ModelViewSet):
@@ -9,20 +12,19 @@ class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
 
 
-class UserSerializer(Serializer):
+class UserModelViewSet(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet):
+    renderer_classes = [JSONRenderer, BrowsableAPIRenderer]
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
-    def update(self, instance, validated_data):
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.email = validated_data.get('email', instance.email)
-        instance.save()
-        return instance
 
-    def create(self, validated_data):
-        user = User(**validated_data)
-        user.save()
-        return user
+class UserListView(ListAPIView):
+    renderer_classes = [JSONRenderer]
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
-    first_name = CharField(max_length=64)
-    last_name = CharField(max_length=64)
-    email = EmailField()
+
+class UserRetrieveView(RetrieveAPIView):
+    renderer_classes = [JSONRenderer]
+    serializer_class = UserSerializer
+    queryset = User.objects.all()

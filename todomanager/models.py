@@ -13,5 +13,5 @@ class Todo(models.Model):
     text = models.CharField(max_length=128)
     creation_date = models.DateField
     update_date = models.DateField
-    user = models.ManyToManyField(User)
-    status = models.BooleanField
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)

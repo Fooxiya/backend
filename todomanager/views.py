@@ -8,7 +8,8 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateMode
     DestroyModelMixin
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
-from .serializers import ProjectModelSerializer, TodoModelSerializer, ProjectSerializer, TodoSerializer
+from .serializers import ProjectModelSerializer, TodoModelSerializer, ProjectSerializer, TodoSerializer,\
+    ProjectSerializerBase
 from authapp.serializers import UserModelSerializer, UserSerializer
 from authapp.models import User
 from .models import Project, Todo
@@ -54,6 +55,11 @@ class TodoModelViewSet(ListModelMixin, RetrieveModelMixin, UpdateModelMixin, Cre
 class ProjectViewSet(ModelViewSet):
     serializer_class = ProjectModelSerializer
     queryset = Project.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method in ['GET']:
+            return ProjectSerializer
+        return ProjectSerializerBase
 
 
 class TodoViewSet(ModelViewSet):

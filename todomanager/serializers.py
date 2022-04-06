@@ -40,6 +40,12 @@ class ProjectSerializer(Serializer):
     users = UserModelSerializer(many=True)
 
 
+class ProjectSerializerBase(ModelSerializer):
+    class Meta:
+        model = Project
+        fields = '__all__'
+
+
 class TodoSerializer(Serializer):
 
     def update(self, instance, validated_data):
